@@ -1,5 +1,8 @@
 package com.hugoof06.pokedex.model;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 public class Stats {
 
     private final int hp;
@@ -9,7 +12,15 @@ public class Stats {
     private final int spDefense;
     private final int speed;
 
-    public Stats(int hp, int attack, int defense, int spAttack, int spDefense, int speed) {
+    @JsonCreator
+    public Stats(
+            @JsonProperty("hp") int hp,
+            @JsonProperty("attack") int attack,
+            @JsonProperty("defense") int defense,
+            @JsonProperty("spAttack") int spAttack,
+            @JsonProperty("spDefense") int spDefense,
+            @JsonProperty("speed") int speed
+    ) {
         this.hp = hp;
         this.attack = attack;
         this.defense = defense;
