@@ -23,5 +23,7 @@ public interface PokemonRepository {
 
     List<Pokemon> listByType(Type type, Generation gen, int offset, int limit);
 
+    List<String> searchSpeciesNames(Generation gen, String query, int offset, int limit);
+
 }
 

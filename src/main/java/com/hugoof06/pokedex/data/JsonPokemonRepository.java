@@ -94,5 +94,23 @@ public class JsonPokemonRepository implements PokemonRepository {
         return filtered.subList(offset, to);
     }
 
+    @Override
+    public List<String> searchSpeciesNames(Generation gen, String query, int offset, int limit) {
+        if (offset < 0) offset = 0;
+        if (limit < 1) limit = 20;
+
+        String q = query == null ? "" : query.trim().toLowerCase();
+        var matches = findAll(gen).stream()
+                .map(p -> p.getName().toLowerCase())
+                .filter(n -> n.contains(q))
+                .sorted()
+                .toList();
+
+        if (offset >= matches.size()) return List.of();
+        int to = Math.min(offset + limit, matches.size());
+        return matches.subList(offset, to);
+    }
+
+
 }
 

@@ -72,4 +72,11 @@ public class CachedPokemonRepository implements PokemonRepository {
         page.forEach(cache::put);
         return page;
     }
+
+    @Override
+    public List<String> searchSpeciesNames(Generation gen, String query, int offset, int limit) {
+        // No cacheamos aquí porque solo son nombres (no objetos Pokemon).
+        return source.searchSpeciesNames(gen, query, offset, limit);
+    }
+
 }

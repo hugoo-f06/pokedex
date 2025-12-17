@@ -46,7 +46,7 @@ public class Main {
                     System.out.println("  list <n>");
                     System.out.println("  show <id|name> (example: show 25 / show pikachu)");
                     System.out.println("  type <TYPE> [page]  (example: type FIRE 2)");
-                    System.out.println("  search <text>  (example: search char)");
+                    System.out.println("  search <text> [page]  (example: search char 2)");
                     System.out.println("  fav list");
                     System.out.println("  fav add <id>   (example: fav add 4)");
                     System.out.println("  fav rm <id>    (example: fav rm 4)");
@@ -155,15 +155,37 @@ public class Main {
 
 
                 if (line.toLowerCase().startsWith("search ")) {
-                    String arg = line.substring(7).trim();
+                    String[] parts = line.split("\\s+");
+                    if (parts.length < 2) {
+                        System.out.println("Usage: search <text> [page]");
+                        continue;
+                    }
 
-                    if (arg.isEmpty()) {
-                        System.out.println("Usage: search <text>");
+                    String text = parts[1];
+                    int page = 1;
+                    int pageSize = 20;
+
+                    if (parts.length >= 3) {
+                        try {
+                            page = Integer.parseInt(parts[2]);
+                        } catch (NumberFormatException e) {
+                            System.out.println("Usage: search <text> [page]");
+                            continue;
+                        }
+                    }
+
+                    var results = service.searchNames(currentGen, text, page, pageSize);
+
+                    if (results.isEmpty()) {
+                        System.out.println("No results (\"" + text + "\", Gen " + currentGen + ", page " + page + ")");
                     } else {
-                        service.search(currentGen, arg).forEach(System.out::println);
+                        System.out.println("Search \"" + text + "\" - Gen " + currentGen + " - Page " + page);
+                        results.forEach(name -> System.out.println("- " + name));
+                        System.out.println("Tip: use 'show <name>' to see full details.");
                     }
                     continue;
                 }
+
 
                 if (line.toLowerCase().equals("fav list")) {
                     var favIds = favService.listIds();

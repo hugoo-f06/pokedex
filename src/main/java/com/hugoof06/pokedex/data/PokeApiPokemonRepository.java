@@ -159,6 +159,46 @@ public class PokeApiPokemonRepository implements PokemonRepository {
         return page;
     }
 
+    @Override
+    public List<String> searchSpeciesNames(Generation gen, String query, int offset, int limit) {
+        if (offset < 0) offset = 0;
+        if (limit < 1) limit = 20;
+
+        String q = (query == null) ? "" : query.trim().toLowerCase(Locale.ROOT);
+        if (q.isEmpty()) return List.of();
+
+        int genId = generationToId(gen);
+
+        JsonNode genJson = getJson("/generation/" + genId + "/");
+        JsonNode species = genJson.get("pokemon_species");
+        if (species == null || !species.isArray()) return List.of();
+
+        record SpeciesRef(int id, String name) {}
+        List<SpeciesRef> matches = new ArrayList<>();
+
+        for (JsonNode sp : species) {
+            String name = sp.get("name").asText(); // ya viene en minúsculas
+            if (!name.contains(q)) continue;
+
+            String url = sp.get("url").asText();   // .../pokemon-species/25/
+            int id = extractTrailingInt(url);
+            matches.add(new SpeciesRef(id, name));
+        }
+
+        // orden “pokedex” dentro de la generación
+        matches.sort(Comparator.comparingInt(SpeciesRef::id));
+
+        if (offset >= matches.size()) return List.of();
+        int to = Math.min(offset + limit, matches.size());
+
+        List<String> page = new ArrayList<>();
+        for (int i = offset; i < to; i++) {
+            page.add(matches.get(i).name());
+        }
+        return page;
+    }
+
+
 
     // ----------------- Internals -----------------
 
