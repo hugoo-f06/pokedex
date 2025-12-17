@@ -4,9 +4,10 @@ import java.util.Scanner;
 import java.util.Comparator;
 import java.util.stream.Collectors;
 
-
+import com.hugoof06.pokedex.data.JsonPokemonRepository;
 //import com.hugoof06.pokedex.data.JsonPokemonRepository;
 import com.hugoof06.pokedex.data.PokeApiPokemonRepository;
+import com.hugoof06.pokedex.data.PokemonRepository;
 import com.hugoof06.pokedex.model.Generation;
 import com.hugoof06.pokedex.model.Pokemon;
 import com.hugoof06.pokedex.model.Type;
@@ -16,7 +17,22 @@ import com.hugoof06.pokedex.favorites.*;
 public class Main {
 
     public static void main(String[] args) {
-        var sourceRepo = new PokeApiPokemonRepository();
+        String source = "api"; // default
+        for (int i = 0; i < args.length; i++) {
+            if (args[i].equalsIgnoreCase("--source") && i + 1 < args.length) {
+                source = args[i + 1].toLowerCase();
+            }
+        }
+
+        PokemonRepository sourceRepo;
+        if (source.equals("json")) {
+            sourceRepo = new JsonPokemonRepository();
+            System.out.println("Source: JSON (local)");
+        } else {
+            sourceRepo = new PokeApiPokemonRepository();
+            System.out.println("Source: PokeAPI");
+        }
+
         var cache = new com.hugoof06.pokedex.cache.FilePokemonCache();
         var repo = new com.hugoof06.pokedex.data.CachedPokemonRepository(sourceRepo, cache);
         var service = new PokedexService(repo);
