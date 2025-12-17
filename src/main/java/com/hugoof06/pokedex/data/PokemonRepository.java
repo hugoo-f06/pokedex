@@ -13,6 +13,8 @@ public interface PokemonRepository {
 
     List<Pokemon> findAll(Generation gen);
 
+    List<Pokemon> list(Generation gen, int offset, int limit);
+
     Optional<Pokemon> findById(int id);
 
     Optional<Pokemon> findByName(String name);

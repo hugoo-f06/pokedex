@@ -44,6 +44,18 @@ public class JsonPokemonRepository implements PokemonRepository {
     }
 
     @Override
+    public List<Pokemon> list(Generation gen, int offset, int limit) {
+        if (offset < 0) offset = 0;
+        if (limit < 1) limit = 20;
+
+        List<Pokemon> filtered = findAll(gen);
+        if (offset >= filtered.size()) return List.of(); // Si la posición es más grande que la lista, se devuelve una lista vacía
+
+        int to = Math.min(offset + limit, filtered.size());
+        return filtered.subList(offset, to);
+    }
+
+    @Override
     public Optional<Pokemon> findById(int id) {
         return all.stream()
                 .filter(p -> p.getId() == id)
