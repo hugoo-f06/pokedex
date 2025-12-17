@@ -20,5 +20,8 @@ public interface PokemonRepository {
     Optional<Pokemon> findByName(String name);
 
     List<Pokemon> findByType(Type type, Generation gen);
+
+    List<Pokemon> listByType(Type type, Generation gen, int offset, int limit);
+
 }
 

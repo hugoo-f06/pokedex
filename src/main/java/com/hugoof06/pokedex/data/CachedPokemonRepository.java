@@ -65,4 +65,11 @@ public class CachedPokemonRepository implements PokemonRepository {
         page.forEach(cache::put);
         return page;
     }
+
+    @Override
+    public List<Pokemon> listByType(Type type, Generation gen, int offset, int limit) {
+        List<Pokemon> page = source.listByType(type, gen, offset, limit);
+        page.forEach(cache::put);
+        return page;
+    }
 }

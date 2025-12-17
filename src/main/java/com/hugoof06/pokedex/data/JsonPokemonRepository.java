@@ -79,5 +79,20 @@ public class JsonPokemonRepository implements PokemonRepository {
                 .filter(p -> p.getTypes().contains(type))
                 .collect(Collectors.toList());
     }
+
+    @Override
+    public List<Pokemon> listByType(Type type, Generation gen, int offset, int limit) {
+        if (offset < 0) offset = 0;
+        if (limit < 1) limit = 20;
+
+        List<Pokemon> filtered = findAll(gen).stream()
+                .filter(p -> p.getTypes().contains(type))
+                .toList();
+
+        if (offset >= filtered.size()) return List.of();
+        int to = Math.min(offset + limit, filtered.size());
+        return filtered.subList(offset, to);
+    }
+
 }
 

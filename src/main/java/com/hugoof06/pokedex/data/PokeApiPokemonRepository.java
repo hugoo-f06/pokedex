@@ -111,6 +111,55 @@ public class PokeApiPokemonRepository implements PokemonRepository {
                 .toList();
     }
 
+    @Override
+    public List<Pokemon> listByType(Type type, Generation gen, int offset, int limit) {
+        if (offset < 0) offset = 0;
+        if (limit < 1) limit = 20;
+
+        // /type/{name} devuelve una lista "pokemon" con referencias :contentReference[oaicite:1]{index=1}
+        String typeName = type.name().toLowerCase(Locale.ROOT);
+        JsonNode typeJson = getJson("/type/" + typeName + "/");
+        JsonNode arr = typeJson.get("pokemon");
+        if (arr == null || !arr.isArray()) return List.of();
+
+        // Construimos refs (id, name) y ordenamos por id
+        record Ref(int id, String name) {}
+        List<Ref> refs = new ArrayList<>();
+        for (JsonNode entry : arr) {
+            JsonNode p = entry.get("pokemon");
+            String name = p.get("name").asText();
+            String url = p.get("url").asText();          // .../pokemon/25/
+            int id = extractTrailingInt(url);
+            refs.add(new Ref(id, name));
+        }
+        refs.sort(Comparator.comparingInt(Ref::id));
+
+        // Ahora aplicamos offset/limit sobre los que sean de esa generación
+        List<Pokemon> page = new ArrayList<>();
+        int seenMatching = 0;
+
+        for (Ref r : refs) {
+            Optional<Pokemon> opt = fetchPokemon(r.name()); // esto ya cachea luego por el wrapper
+            if (opt.isEmpty()) continue;
+
+            Pokemon p = opt.get();
+            if (p.getGeneration() != gen) continue;
+
+            if (seenMatching < offset) {
+                seenMatching++;
+                continue;
+            }
+
+            page.add(p);
+            seenMatching++;
+
+            if (page.size() >= limit) break;
+        }
+
+        return page;
+    }
+
+
     // ----------------- Internals -----------------
 
     private Optional<Pokemon> fetchPokemon(String idOrName) {

@@ -54,4 +54,13 @@ public class PokedexService {
                 .filter(p -> p.getName().toLowerCase(Locale.ROOT).contains(q))
                 .toList();
     }
+
+    public List<Pokemon> byType(Generation gen, Type type, int page, int pageSize) {
+        if (page < 1) page = 1;
+        if (pageSize < 1) pageSize = 20;
+
+        int offset = (page - 1) * pageSize;
+        return repo.listByType(type, gen, offset, pageSize);
+    }
+
 }

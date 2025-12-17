@@ -9,6 +9,7 @@ import java.util.stream.Collectors;
 import com.hugoof06.pokedex.data.PokeApiPokemonRepository;
 import com.hugoof06.pokedex.model.Generation;
 import com.hugoof06.pokedex.model.Pokemon;
+import com.hugoof06.pokedex.model.Type;
 import com.hugoof06.pokedex.service.PokedexService;
 import com.hugoof06.pokedex.favorites.*;
 
@@ -44,7 +45,7 @@ public class Main {
                     System.out.println("  gen <n>        (example: gen 1)");
                     System.out.println("  list <n>");
                     System.out.println("  show <id|name> (example: show 25 / show pikachu)");
-                    System.out.println("  type <TYPE>    (example: type FIRE)");
+                    System.out.println("  type <TYPE> [page]  (example: type FIRE 2)");
                     System.out.println("  search <text>  (example: search char)");
                     System.out.println("  fav list");
                     System.out.println("  fav add <id>   (example: fav add 4)");
@@ -117,16 +118,41 @@ public class Main {
                 }
 
                 if (line.toLowerCase().startsWith("type ")) {
-                    String arg = line.substring(5).trim();
+                    String[] parts = line.split("\\s+");
+                    if (parts.length < 2) {
+                        System.out.println("Usage: type <TYPE> [page]");
+                        continue;
+                    }
+
+                    String typeArg = parts[1];
+                    int page = 1;
+                    int pageSize = 20;
+
+                    if (parts.length >= 3) {
+                        try {
+                            page = Integer.parseInt(parts[2]);
+                        } catch (NumberFormatException e) {
+                            System.out.println("Usage: type <TYPE> [page]");
+                            continue;
+                        }
+                    }
 
                     try {
-                        var type = com.hugoof06.pokedex.model.Type.valueOf(arg.toUpperCase());
-                        service.byType(currentGen, type).forEach(System.out::println);
+                        Type type = Type.valueOf(typeArg.toUpperCase());
+                        var results = service.byType(currentGen, type, page, pageSize);
+
+                        if (results.isEmpty()) {
+                            System.out.println("No results (type " + type + ", page " + page + ")");
+                        } else {
+                            System.out.println("Type " + type + " - Gen " + currentGen + " - Page " + page);
+                            results.forEach(System.out::println);
+                        }
                     } catch (IllegalArgumentException e) {
-                        System.out.println("Unknown type: " + arg);
+                        System.out.println("Unknown type: " + typeArg);
                     }
                     continue;
                 }
+
 
                 if (line.toLowerCase().startsWith("search ")) {
                     String arg = line.substring(7).trim();
