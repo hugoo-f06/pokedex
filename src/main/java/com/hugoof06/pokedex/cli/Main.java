@@ -1,16 +1,28 @@
 package com.hugoof06.pokedex.cli;
 
 import java.util.Scanner;
+import java.util.Comparator;
+import java.util.stream.Collectors;
 
-import com.hugoof06.pokedex.data.JsonPokemonRepository;
+
+//import com.hugoof06.pokedex.data.JsonPokemonRepository;
+import com.hugoof06.pokedex.data.PokeApiPokemonRepository;
 import com.hugoof06.pokedex.model.Generation;
+import com.hugoof06.pokedex.model.Pokemon;
 import com.hugoof06.pokedex.service.PokedexService;
+import com.hugoof06.pokedex.favorites.*;
 
 public class Main {
 
     public static void main(String[] args) {
-        var repo = new JsonPokemonRepository();
+        var sourceRepo = new PokeApiPokemonRepository();
+        var cache = new com.hugoof06.pokedex.cache.FilePokemonCache();
+        var repo = new com.hugoof06.pokedex.data.CachedPokemonRepository(sourceRepo, cache);
         var service = new PokedexService(repo);
+
+        var favRepo = new FavoritesRepository();
+        var favService = new FavoritesService(favRepo);
+
 
         Generation currentGen = Generation.GEN_1;
 
@@ -34,6 +46,11 @@ public class Main {
                     System.out.println("  show <id|name> (example: show 25 / show pikachu)");
                     System.out.println("  type <TYPE>    (example: type FIRE)");
                     System.out.println("  search <text>  (example: search char)");
+                    System.out.println("  fav list");
+                    System.out.println("  fav add <id>   (example: fav add 4)");
+                    System.out.println("  fav rm <id>    (example: fav rm 4)");
+                    System.out.println("  cache info");
+                    System.out.println("  cache clear");
                     System.out.println("  exit");
                     continue;
                 }
@@ -122,8 +139,117 @@ public class Main {
                     continue;
                 }
 
+                if (line.toLowerCase().equals("fav list")) {
+                    var favIds = favService.listIds();
+
+                    // Resolvemos IDs -> Optional<Pokemon>
+                    var resolved = favIds.stream()
+                            .map(id -> service.show(String.valueOf(id)) // Optional<Pokemon>
+                                    .map(p -> new FavResolved(id, p))
+                                    .orElseGet(() -> new FavResolved(id, null)))
+                            .collect(Collectors.toList());
+
+                    // Separar cargados / no cargados
+                    var loaded = resolved.stream()
+                            .filter(r -> r.pokemon != null)
+                            .map(r -> r.pokemon)
+                            .sorted(Comparator.comparing(Pokemon::getGeneration)
+                                    .thenComparingInt(Pokemon::getId))
+                            .toList();
+
+                    var notLoaded = resolved.stream()
+                            .filter(r -> r.pokemon == null)
+                            .map(r -> r.id)
+                            .sorted()
+                            .toList();
+
+                    System.out.println("Favorites (" + favIds.size() + "/" + favService.capacity() + ")");
+                    System.out.println("File: " + favService.fileLocation());
+
+                    if (favIds.isEmpty()) {
+                        System.out.println("(empty)");
+                        continue;
+                    }
+
+                    if (!loaded.isEmpty()) {
+                        System.out.println("\n--- Loaded ---");
+                        for (Pokemon p : loaded) {
+                            System.out.println("-----");
+                            System.out.println("#" + String.format("%03d", p.getId()) + " " + p.getName());
+                            System.out.println("Gen: " + p.getGeneration());
+                            System.out.println("Types: " + p.getTypes());
+                            System.out.println("Stats: " + p.getStats());
+                        }
+                    }
+
+                    if (!notLoaded.isEmpty()) {
+                        System.out.println("\n--- Not loaded yet ---");
+                        for (int id : notLoaded) {
+                            System.out.println("#" + String.format("%03d", id) + " (NOT LOADED)");
+                        }
+                    }
+
+                    System.out.println("-----");
+                    continue;
+                }
+
+                if (line.toLowerCase().startsWith("fav add ")) {
+                    String arg = line.substring(8).trim();
+                    try {
+                        int id = Integer.parseInt(arg);
+
+                        boolean added = favService.add(id);
+                        System.out.println(
+                                added
+                                        ? "Added to favorites: " + id
+                                        : "Already in favorites: " + id
+                        );
+
+                    } catch (NumberFormatException e) {
+                        System.out.println("Usage: fav add <id>");
+                    } catch (IllegalStateException e) {
+                        System.out.println(e.getMessage());
+                    }
+                    continue;
+                }
+
+                if (line.toLowerCase().startsWith("fav rm ")) {
+                    String arg = line.substring(7).trim();
+                    try {
+                        int id = Integer.parseInt(arg);
+                        boolean removed = favService.remove(id);
+                        System.out.println(removed ? "Removed from favorites: " + id : "Not in favorites: " + id);
+                    } catch (NumberFormatException e) {
+                        System.out.println("Usage: fav rm <id>");
+                    }
+                    continue;
+                }
+
+                if (line.toLowerCase().equals("cache info")) {
+                    System.out.println("Cache directory: " + cache.location());
+                    System.out.println("Cached pokemons: " + cache.countCachedPokemons());
+                    continue;
+                }
+
+                if (line.toLowerCase().equals("cache clear")) {
+                    int removed = cache.clear();
+                    System.out.println("Cache cleared (" + removed + " files removed)");
+                    continue;
+                }
+
+
                 System.out.println("Unknown command. Type 'help'.");
             }
+        }
+    }
+
+    private static class FavResolved {
+        final int id;
+        final Pokemon pokemon; // null si no está cargado
+
+        FavResolved(int id, Pokemon pokemon) {
+            this.id = id;
+            this.pokemon = pokemon;
         }
     }
 }
