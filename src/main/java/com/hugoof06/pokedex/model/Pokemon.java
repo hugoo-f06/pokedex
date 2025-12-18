@@ -13,6 +13,7 @@ public class Pokemon {
     private final Generation generation;
     private final List<Type> types;
     private final Stats stats;
+    private String spriteUrl;
 
     @JsonCreator
     public Pokemon(
@@ -20,14 +21,17 @@ public class Pokemon {
             @JsonProperty("name") String name,
             @JsonProperty("generation") Generation generation,
             @JsonProperty("types") List<Type> types,
-            @JsonProperty("stats") Stats stats
+            @JsonProperty("stats") Stats stats,
+            @JsonProperty("spriteUrl") String spriteUrl
     ) {
         this.id = id;
         this.name = name;
         this.generation = generation;
         this.types = List.copyOf(types);
         this.stats = stats;
+        this.spriteUrl = spriteUrl; // puede ser null
     }
+
 
     public int getId() {
         return id;
@@ -47,6 +51,10 @@ public class Pokemon {
 
     public Stats getStats() {
         return stats;
+    }
+
+    public String getSpriteUrl() {
+        return spriteUrl;
     }
 
     @Override

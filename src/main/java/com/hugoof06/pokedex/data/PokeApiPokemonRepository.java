@@ -205,6 +205,13 @@ public class PokeApiPokemonRepository implements PokemonRepository {
     private Optional<Pokemon> fetchPokemon(String idOrName) {
         try {
             JsonNode p = getJson("/pokemon/" + idOrName + "/"); // :contentReference[oaicite:3]{index=3}
+            
+            String spriteUrl = null;
+            JsonNode sprites = p.get("sprites");
+            if (sprites != null && sprites.get("front_default") != null && !sprites.get("front_default").isNull()) {
+                spriteUrl = sprites.get("front_default").asText();
+            }
+
             int id = p.get("id").asInt();
 
             String name = capitalize(p.get("name").asText());
@@ -220,7 +227,7 @@ public class PokeApiPokemonRepository implements PokemonRepository {
             // Generación: viene en /pokemon-species/{id} dentro del campo "generation" :contentReference[oaicite:4]{index=4}
             Generation gen = fetchGenerationForSpecies(id);
 
-            return Optional.of(new Pokemon(id, name, gen, types, stats));
+            return Optional.of(new Pokemon(id, name, gen, types, stats, spriteUrl));
         } catch (Exception e) {
             return Optional.empty();
         }
